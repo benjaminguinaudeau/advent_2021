@@ -1,0 +1,71 @@
+---
+title: "Day 2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+## data
+
+```{r}
+dt <-  tibble::tibble(order = adventr::read_advent_of_code(day = 2)) %>%
+  glimpse
+```
+
+## First Level
+
+```{r}
+ans_1 <- dt %>%
+  mutate(
+    n_step = as.numeric(stringr::str_extract(order, "\\d+")), # Number of steps to take in one direction
+    h_delta = ifelse(stringr::str_detect(order, "forward"), n_step, 0), 
+    v_delta = dplyr::case_when(
+      stringr::str_detect(order, "down") ~ n_step, # increases the depth
+      stringr::str_detect(order, "up") ~ -n_step, # decreases the depth
+      T ~ 0)
+  ) %>%
+  summarise(
+    h_final_pos = sum(h_delta),
+    v_final_pos = sum(v_delta),
+    ans_1 = h_final_pos * v_final_pos
+  )
+# adventr::submit_to_advent_of_code(answer = ans_1$ans_1, day = 2, level = 1)
+```
+
+## Second Level
+
+```{r}
+ans_2 <- dt %>%
+  mutate(
+    n_step = as.numeric(stringr::str_extract(order, "\\d+")), # Number of steps to take in one direction
+    h_delta = ifelse(stringr::str_detect(order, "forward"), n_step, 0), 
+    
+    # Aim Delta amounts to the variation of aim depending on the orders
+    aim_delta = dplyr::case_when(
+      stringr::str_detect(order, "down") ~ n_step, # increases the aim
+      stringr::str_detect(order, "up") ~ -n_step, # decreases the aim
+      T ~ 0), 
+    
+    aim = cumsum(aim_delta), 
+    v_delta = ifelse(stringr::str_detect(order, "forward"), cumsum(aim_delta) * n_step, 0), 
+    
+    h_pos = cumsum(h_delta),
+    v_pos = cumsum(v_delta)
+    
+  ) %>%
+  # As we already compute the cumulative sum, we can only keep the last row 
+  # to know where the submarine's position
+  tail(1) %>% 
+  mutate(
+    ans_2 = h_pos * v_pos
+  )
+# adventr::submit_to_advent_of_code(answer = ans_2$ans_2, day = 2, level = 2)
+```
+
+
+

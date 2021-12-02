@@ -1,0 +1,37 @@
+---
+title: "Day 1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+## data
+
+```{r}
+dt <- tibble::tibble(depth = as.numeric(adventr::read_advent_of_code(day = 1)))
+```
+
+## First problem
+
+```{r}
+ans_1 <- dt %>%
+  mutate(increased = depth > lag(depth, 1)) %>%
+  summarise(answer_1 = sum(increased, na.rm = T))
+# adventr::submit_to_advent_of_code(answer = ans_1$answer_1, day = 1, level = 1)
+```
+
+## Second problem
+
+```{r}
+ans_2 <- dt %>%
+  mutate(sliding_three_sum = depth + lag(depth, 1) + lag(depth, 2), 
+         sliding_increase = sliding_three_sum > lag(sliding_three_sum, 1))  %>%
+  summarise(answer_2 = sum(sliding_increase, na.rm = T))
+# adventr::submit_to_advent_of_code(answer = ans_2$answer_2, day = 1, level = 2)
+```
+
