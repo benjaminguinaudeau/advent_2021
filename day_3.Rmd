@@ -1,0 +1,71 @@
+---
+title: "Day 2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+## data
+
+```{r}
+dt <- tibble::tibble(bits = adventr::read_advent(day = 3)) %>%
+  filter(bits != "") %>%
+  glimpse
+```
+
+## First Level
+
+```{r}
+binary_to_decimal <- function(x) sum(x[length(x):1] * 2^(0:(length(x) - 1)))
+
+bits_split = str_split(dt$bits, "")
+
+gamma <- c()
+epsilon <- c()
+for(i in 1:length(bits_split[[1]])){
+  gamma[i] <- round(mean(as.numeric(map_chr(bits_split, i))))
+  epsilon[i] <- abs(gamma[i] - 1)
+}
+
+ans_1 <- binary_to_decimal(gamma)*binary_to_decial(epsilon)
+# adventr::submit_advent(answer = ans_1, day = 3, level = 1)
+```
+
+## Second Level
+
+```{r}
+select_x_common <- function(x, index, type = "most"){
+  
+  # When recursion is done: return the last element
+  if(length(x) == 1)  return(x[[1]])
+  # If needed, index should be reinitialized
+  if(index > length(x[[1]])) index <- 1
+  
+  # Extract for each list element the nth bit
+  bit_index <- as.numeric(map_chr(x, index))
+
+  # Most common nth bit
+  most_common <- (mean(bit_index) >= .5)
+  
+  # Depending on the type select the element with the most/least common nth bit
+  if(type == "most") rest <- x[bit_index == most_common]
+  if(type == "least") rest <- x[bit_index != most_common]
+  
+  select_x_common(rest, index + 1, type = type)
+}
+
+bits_split = str_split(dt$bits, "")
+oxygen <- select_x_common(bits_split, index = 1, type = "most")
+co2 <- select_x_common(bits_split, index = 1, type = "least")
+
+ans_2 <- binary_to_decimal(as.numeric(oxygen))*binary_to_decimal(as.numeric(co2))
+# adventr::submit_advent(answer = ans_2, day = 3, level = 2)
+```
+
+
+

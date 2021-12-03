@@ -13,7 +13,7 @@ library(tidyverse)
 ## data
 
 ```{r}
-dt <-  tibble::tibble(order = adventr::read_advent_of_code(day = 2)) %>%
+dt <- tibble::tibble(order = adventr::read_avent(day = 2)) %>%
   glimpse
 ```
 
@@ -34,7 +34,7 @@ ans_1 <- dt %>%
     v_final_pos = sum(v_delta),
     ans_1 = h_final_pos * v_final_pos
   )
-# adventr::submit_to_advent_of_code(answer = ans_1$ans_1, day = 2, level = 1)
+# adventr::submit_advent(answer = ans_1$ans_1, day = 2, level = 1)
 ```
 
 ## Second Level
@@ -64,7 +64,9 @@ ans_2 <- dt %>%
   mutate(
     ans_2 = h_pos * v_pos
   )
-# adventr::submit_to_advent_of_code(answer = ans_2$ans_2, day = 2, level = 2)
+
+
+adventr::submit_advent(answer = ans_2$ans_2, day = 2, level = 2)
 ```
 
 
