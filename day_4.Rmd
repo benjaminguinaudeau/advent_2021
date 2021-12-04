@@ -1,0 +1,94 @@
+---
+title: "Day 4"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+## data
+
+```{r}
+raw <- adventr::read_advent(day = 4)
+
+drawing_suite <- raw[1] %>% str_split(",") %>% .[[1]] %>% as.numeric
+
+gridify <- function(raw_grid, grid_id){
+  grid_num <- raw_grid %>%
+    tail(-1) %>%
+    str_squish %>%
+    str_split(" ") %>%
+    reduce(c) %>%
+    as.numeric()
+  
+  tibble::tibble(grid_id = grid_id, num = grid_num) %>%
+    mutate(col = 1 + (-1 + 1:n()) %% 5, row = 1 + (-1 + 1:n()) %/% 5)
+}
+
+grid <- raw %>% 
+  head(-1) %>%
+  tail(-1) %>%
+  split(cumsum(. == "")) %>% #bashR::simule_map(2)
+  imap_dfr(gridify)
+
+solve_grid <- function(grid, drawing_suite, draw_index = 1){
+  
+  # Remove the drawn number from the grid
+  rest <- grid %>% 
+    filter(num != drawing_suite[draw_index])
+    
+  
+  # Test if any grid won (any row_index|col_index not appearing)
+  winner <- rest %>% 
+    group_by(grid_id) %>%
+    filter(length(unique(col)) != 5 | length(unique(row)) != 5)
+
+  if(nrow(winner) == 0){
+    # If no winner call again
+    return(solve_grid(rest, drawing_suite, draw_index + 1))
+  } else {
+    # Return winner
+    return(mutate(winner, last_number = drawing_suite[draw_index]))
+  }
+  
+}
+
+out <- grid %>% solve_grid(drawing_suite)
+
+ans_1 <- sum(out$num) * unique(out$last_number)
+adventr::submit_advent(answer = ans_1, day = 4, level = 1)
+```
+
+
+```{r}
+last_winning_grid <- function(grid, drawing_suite, draw_index = 1){
+  
+  # Remove the drawn number from the grid
+  tmp <- grid %>% 
+    filter(num != drawing_suite[draw_index]) 
+  
+  # Remove all winning grid
+  rest <- tmp %>%
+    group_by(grid_id) %>%
+    filter(length(unique(col)) == 5 & length(unique(row)) == 5) %>%
+    ungroup
+    
+  # Recurse until all grids won
+  if(nrow(rest) > 0 & draw_index < length(drawing_suite)){
+    return(last_winning_grid(rest, drawing_suite, draw_index + 1))
+  } else {
+    # Return last grid to win
+    return(mutate(tmp, last_number = drawing_suite[draw_index]))
+  }
+  
+}
+
+out <- grid %>% last_winning_grid(drawing_suite)
+ans_2 <- sum(out$num) * unique(out$last_number)
+adventr::submit_advent(answer = ans_2, day = 4, level = 2)
+```
+
