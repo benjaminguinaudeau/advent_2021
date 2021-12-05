@@ -1,0 +1,44 @@
+---
+title: "lab"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+```{r}
+get_index <- function(col, row) (col - 1) * max(row) - row
+get_col <- function(index, n_row) 1 + (index - 1) %/% n_row 
+get_row <- function(index, n_row) 1 + (index - 1) %% n_row
+```
+
+
+```{r}
+stack <- function(vec, new){
+  if(new %in% vec) return(vec[vec != new])
+  if(!new %in% vec) return(c(vec, new))
+}
+
+compute_overlaps <- function(min, max){
+  tibble::tibble(bound = c(min, max)) %>%
+    mutate(vec_id = (0:(n()-1)) %% length(min)) %>%
+    arrange(bound) %>%
+    mutate(stack = vec_id %>%
+             accumulate(stack) %>%
+             map_dbl(length), 
+           overlap_start = lag(stack, default = 0) <= 1 & stack > 1, 
+           start = bound, 
+           end = lead(bound) - 1,
+           overlap_end = lag(stack, default = 0) > 1 & stack <= 1,
+           overlap_id = cumsum(overlap_start | overlap_end)) %>%
+    group_by(overlap_id) %>%
+    summarise(length_overlap = ifelse(any(stack > 1), max(end) - min(start) + 1, 0)) %>%
+    pull(length_overlap) %>%
+    sum
+}
+```
+```
+

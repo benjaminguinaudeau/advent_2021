@@ -1,0 +1,45 @@
+---
+title: "Day 5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+## data
+
+```{r}
+dt <- tibble(raw = adventr::read_advent(day = 5)) %>%
+  separate(raw, into = c("xmin", "ymin", "xmax", "ymax")) %>%
+  mutate_all(as.numeric)  %>%
+  drop_na %>%
+  
+  # Generate all points coordinates
+  mutate(x = map2(xmin, xmax, ~.x:.y),
+         y = map2(ymin, ymax, ~.x:.y)) %>%
+  unnest(c(x, y))
+```
+
+```{r}
+# Level 1
+ans <- dt %>% 
+  filter(xmin == xmax | ymin == ymax) %>%
+  count(x, y, sort = T) %>%
+  summarise(n = sum(n > 1))
+
+adventr::submit_advent(answer = ans, day = 5, level = 1)  
+
+# Level 2
+ans <- dt %>% 
+  count(x, y, sort = T) %>%
+  summarise(n = sum(n > 1))
+
+adventr::submit_advent(answer = ans, day = 5, level = 2)  
+```
+
+
+
