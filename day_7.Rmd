@@ -1,0 +1,37 @@
+---
+title: "Day 7"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+## data
+
+```{r}
+crab_h_pos <- as.numeric(str_split(adventr::read_advent(day = 7), ",")[[1]])
+```
+
+## Level 1
+
+```{r}
+ans <- sum(abs(crab_h_pos - median(crab_h_pos)))
+
+adventr::submit_advent(answer = ans, day = 7, level = 1)
+```
+
+## Level 2
+
+```{r}
+# n + (n - 1) + (n - 2) + ... + 2 + 1 = n + n(n - 1)/2
+dist <- abs(crab_h_pos - ceiling(mean(crab_h_pos)))
+ans_ceiling <- sum(dist + dist*(dist - 1)/2)
+dist <- abs(crab_h_pos - floor(mean(crab_h_pos)))
+ans_floor <- sum(dist + dist*(dist - 1)/2)
+
+adventr::submit_advent(answer = min(ans_ceiling, ans_floor), day = 7, level = 2) 
+```

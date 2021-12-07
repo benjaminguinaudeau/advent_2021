@@ -1,0 +1,51 @@
+---
+title: "Day 6"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+## data
+
+```{r}
+pop_saf <- as.numeric(str_split(adventr::read_advent(day = 6), ",")[[1]])
+
+new_generation <- function(pop){
+  pop <- pop - 1
+  
+  new_fish <- rep(9, sum(pop == 0))
+  pop[pop == 0] <- 7
+  return(c(pop, new_fish))
+}
+
+lantern_pop <- pop_saf
+for(i in 1:80) lantern_pop <- new_generation(lantern_pop)
+
+adventr::submit_advent(answer = length(lantern_pop[lantern_pop != 9]), day = 6, level = 1)  
+
+
+lantern_pop <- pop_saf
+
+lantern_pop <- c(table(lantern_pop))
+lantern_pop[6:9] <- 0
+
+new_generation <- function(pop){
+  
+
+  giving_birth <- init_vector[1]
+  
+  # Every 
+  pop <- c(tail(pop, -1), giving_birth)
+  pop[7] <- pop[7] + giving_birth
+  return(pop)
+}
+for(i in 1:256) lantern_pop <- new_generation(lantern_pop)
+
+adventr::submit_advent(answer = sum(head(lantern_pop, -1)), day = 6, level = 2) 
+
+```
