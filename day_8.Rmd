@@ -1,0 +1,146 @@
+---
+title: "Day 8"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+## data
+
+```{r}
+digits <- adventr::read_advent(day = 8) %>%
+  str_remove("\\|") %>%
+  str_split("\\s")
+
+ans_1 <- digits %>%
+  map_dbl(~sum(str_length(tail(.x, 4)) %in% c(2, 3, 4, 7))) %>%
+  sum()
+
+adventr::submit_advent(answer = ans_1, day = 8, level = 1) 
+```
+
+```{r}
+raw_num <- list(
+  tibble::tibble(num = 0, dig = "abcefg"),
+  tibble::tibble(num = 1, dig = "cf"),
+  tibble::tibble(num = 2, dig = "acdeg"),
+  tibble::tibble(num = 3, dig = "acdfg"),
+  tibble::tibble(num = 4, dig = "bcdf"),
+  tibble::tibble(num = 5, dig = "abdfg"),
+  tibble::tibble(num = 6, dig = "abdefg"),
+  tibble::tibble(num = 7, dig = "acf"),
+  tibble::tibble(num = 8, dig = "abcdefg"),
+  tibble::tibble(num = 9, dig = "abcdfg")
+) %>%
+  reduce(bind_rows)
+
+real_numbers <- raw_num %>%
+  mutate(n_dig = str_length(dig), 
+         dig = str_split(dig, "")) %>%
+  unnest(dig)
+
+update_connexion_matrix <- function(connexion_matrix, x, real_numbers){
+  
+  if(x == "") return(connexion_matrix)
+  
+  len <- str_length(x)
+  
+  # Extract unidentified signal segment
+  already_identified_signal <- letters[which(rowSums(connexion_matrix) == 1)]
+  unidentified_signal <- str_split(x, "")[[1]] %>%
+    setdiff(already_identified_signal)
+  
+  # Which real segment could be represented by each signal segment?  
+  already_identified_real <- letters[which(colSums(connexion_matrix) == 1)]
+  unidentified_real <- real_numbers %>% 
+    filter(n_dig == len) %>%
+    filter(!dig %in% already_identified_real) %>%
+    pull(dig) %>%
+    unique
+  
+  for(i in 1:nrow(connexion_matrix)){
+    for(j in 1:ncol(connexion_matrix)){
+      if(letters[i] %in% unidentified_signal & !letters[j] %in% unidentified_real){
+        connexion_matrix[i, j] <- 0
+      } 
+      if(!letters[i] %in% unidentified_signal & letters[j] %in% unidentified_real & length(unidentified_signal) == length(unidentified_real)){
+        connexion_matrix[i, j] <- 0
+      } 
+    } 
+  }
+  
+  return(connexion_matrix)
+}
+
+find_corresponding_number <- function(str, pot_con, raw_num){
+  
+  prev <- output <- list()
+  for(k in str_split(str, "")[[1]]){
+    if(length(prev) == 0){
+      output <- pot_con[[k]]
+    } else {
+      for(m in prev){
+        output <- append(
+          output, 
+          pot_con[[k]] %>%
+            map(~if(!.x %in% m) c(m, .x)) %>%
+            purrr::compact()
+        )
+      }
+    }
+    prev <- output 
+    output <- list()
+  }
+  
+  prev %>%
+    map_dfr(~tibble::tibble(dig = paste(str_sort(.x), collapse = ""))) %>%
+    left_join(raw_num, by = "dig") %>%
+    pull(num) %>%
+    discard(is.na) %>%
+    unique()
+}
+
+get_connexion_possibilities <- function(digit_vector, real_numbers){
+  
+  connexion_matrix <- matrix(rep(1, 49), nrow = 7,byrow = T)
+  for(jj in digit_vector){
+    jj <- 0
+    jj <- jj + 1
+    connexion_matrix <- update_connexion_matrix(connexion_matrix, digit_vector[jj], real_numbers)
+    print(connexion_matrix)
+  }
+  
+  pot_con <- list()
+  for(i in 1:nrow(connexion_matrix)){
+    pot_con <- append(pot_con, list(letters[which(as.logical(connexion_matrix[i, ]))]))
+  }
+  pot_con <- pot_con %>% set_names(letters[1:7])
+  return(pot_con)
+}
+```
+
+```{r}
+out <- digits %>% 
+  discard(~.x[1] == "") %>%
+  map_dbl(~{
+    
+    con_matrix <- .x %>% 
+      get_connexion_possibilities(real_numbers)
+    
+    tail(.x, 4) %>%
+      discard(~.x == "") %>%
+      map(find_corresponding_number, con_matrix, raw_num) %>%
+      paste(collapse = "") %>%
+      as.numeric()
+    
+  })
+
+adventr::submit_advent(answer = sum(out), day = 8, level = 2) 
+```
+
+
