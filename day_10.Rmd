@@ -1,0 +1,87 @@
+---
+title: "Day 10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+## data
+
+```{r}
+char_seq <- adventr::read_advent(day = 10) %>%
+  discard(~.x == "") %>%
+  str_split("")
+
+
+matches_opened <- function(x) x == env$pairs[[dplyr::last(env$stack)]]
+is_closing <- function(x) x %in% c(")", "]", "}", ">")
+
+check_new_char <- function(new_char, stop_after_first_one = T){
+  if(env$triggered) return("")
+  
+  if(is_closing(new_char)){
+    if(matches_opened(new_char)){
+      env$stack <- head(env$stack, -1) #Pop
+    } else {
+      env$error_count[[new_char]] <- env$error_count[[new_char]] + 1
+      if(stop_after_first_one) env$triggered <- T # Stop once one error was found
+    }
+  } else {
+    # Add it to the stack
+    env$stack <- append(env$stack, new_char)
+  }
+  
+}
+
+env <- rlang::new_environment()
+env$error_count <- list(")" = 0, "]" = 0, "}" = 0, ">" = 0)
+env$pairs <- list("(" = ")", "{" = "}", "[" = "]", "<" = ">")
+env$triggered <- F
+
+char_seq %>%
+  walk(~{
+    env$stack <- c()
+    env$triggered <- F
+    .x %>% walk(check_new_char)
+  })
+
+ans_1 <- sum(as.numeric(env$error_count) * c(3, 57, 1197, 25137))
+
+adventr::submit_advent(answer = ans_1, day = 10, level = 1) 
+```
+
+
+```{r}
+env <- rlang::new_environment()
+env$error_count <- list(")" = 0, "]" = 0, "}" = 0, ">" = 0)
+env$pairs <- list("(" = ")", "{" = "}", "[" = "]", "<" = ">")
+env$triggered <- F
+
+out <- char_seq %>%
+  map(~{
+    env$stack <- c()
+    env$triggered <- F
+    .x %>% walk(check_new_char)
+    if(!env$triggered) return(env$stack)
+  }) %>%
+  purrr::compact()
+
+points <- list("(" = 1, "[" = 2, "{" = 3, "<" = 4)
+
+ans_2 <- out %>% #bashR::simule_map(1)
+  map_dbl(~{
+    .x %>%
+      rev() %>%
+      map_dbl(~points[[.x]]) %>%
+      reduce(function(a, b) a*5 + b)
+  }) %>%
+  median
+
+adventr::submit_advent(answer = ans_2, day = 10, level = 2) 
+```
+

@@ -1,0 +1,88 @@
+---
+title: "Day 9"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+## data
+
+```{r}
+map_mat <- adventr::read_advent(day = 9) %>%
+  discard(~.x == "") %>%
+  str_split("") %>%
+  map(as.numeric)
+
+check_cell <- function(map_mat, i, j){
+  
+  val <- map_mat[[i]][[j]]
+  
+  if(i > 1 && map_mat[[i - 1]][[j]] <= val) return()
+  if(j > 1 && map_mat[[i]][[j-1]] <= val) return()
+  if(i < length(map_mat) && map_mat[[i + 1]][[j]] <= val) return()
+  if(j < length(map_mat[[1]]) && map_mat[[i]][[j + 1]] <= val) return()
+  
+  return(val)
+}
+
+res <- c()
+for(i in 1:length(map_mat)){
+  for(j in 1:length(map_mat[[1]])){
+    
+    tmp <- check_cell(map_mat, i, j)
+    
+    if(length(tmp) > 0){
+      res <- append(res, tmp)
+    }
+    
+  }
+}
+
+ans_1 <-  sum(res + 1)
+
+adventr::submit_advent(answer = ans_1, day = 9, level = 1) 
+```
+
+
+```{r}
+count_bassin <- function(map_bin, i, j){
+  
+  
+  if(map_bin[[i]][[j]] == 0) return(0) # Hitting a maximum number
+  if(env$explored[[i]][[j]]) return(0) # Cell already explored
+  
+  env$explored[[i]][[j]] <- T # Updating exploration map
+
+  if(i > 1) a <- count_bassin(map_bin, i - 1, j) else a <- 0 # Top 
+  if(j > 1) b <- count_bassin(map_bin, i , j - 1)  else b <- 0 # Left
+  if(i < length(map_bin)) c <- count_bassin(map_bin, i + 1 , j) else c <- 0 # Bottom
+  if(j < length(map_bin[[1]])) d <- count_bassin(map_bin, i, j + 1)  else d <- 0 # Right
+  
+  return(1 + a + b + c + d)
+  
+}
+
+map_bin <- map_mat %>%
+  map(~ifelse(.x == 9, 0, 1))
+
+env <- rlang::new_environment()
+# Matrix to keep track which cell were already visited
+env$explored <- rep(list(rep(F, 100)), 100)
+out <- c()
+for(i in 1:length(map_bin)){
+  for(j in 1:length(map_bin[[1]])){
+    if(!env$explored[[i]][[j]] & map_bin[[i]][[j]] != 0){
+      out <- append(out, count_bassin(map_bin, i, j))
+    }
+  }
+}
+ans_2 <- prod(tail(sort(out), 3))
+adventr::submit_advent(answer = ans_2, day = 9, level = 2) 
+
+```
+
