@@ -1,0 +1,98 @@
+---
+title: "Day 12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+
+```{r}
+tmp <- tibble::tibble(raw = adventr::read_advent(day = 12))  %>%
+  extract(raw, into  = c("from", "to"), regex = c("^(.*?)\\-(.*?)$"))  %>%
+  drop_na
+
+cave_map <- bind_rows(
+  tmp, rename(tmp, to = from, from = to)
+) %>%
+  # precompute which caves are small
+  mutate(small = str_detect(to, "[a-z]")) %>%
+  # remove edge ending in start as no come-back to start is possible
+  filter(!str_detect(to, "start")) 
+
+get_all_paths <- function(cave_map, max_visit_small = 1){
+  
+  inp <- tibble::tibble(path = "start", 
+                        current_node = "start", 
+                        max_visit_small = max_visit_small)
+  finished <- tibble::tibble()
+  
+  while(nrow(inp) > 0){ # repeat as long as there are unfinished paths
+    
+    out <- inp %>%
+      # add all possible next destination given a vector of source
+      left_join(cave_map, by = c("current_node" = "from")) %>% 
+      mutate(
+        # count previous visits only for small nodes
+        count = ifelse(small, str_count(path, paste0(" ", to, " |$")), 0), 
+        # for level 2, update max_visit_small once a cave was visited twice
+        max_visit_small = ifelse(count == max_visit_small, 1, max_visit_small)
+      ) %>% 
+      # remove paths who came back to small cave to often
+      filter(count <= max_visit_small) %>% 
+      select(path, current_node = to, max_visit_small) %>%
+      # update paths
+      mutate(path = paste(path, current_node)) 
+    
+    # Found paths
+    finished <- bind_rows(finished, filter(out, str_detect(current_node, "end"))) 
+    # Unfinished paths
+    inp <- out %>% filter(!str_detect(current_node, "end")) 
+    
+  }
+  
+  return(finished)
+  
+}
+
+# Level 1
+finished <- get_all_paths(cave_map, max_visit_small = 1)
+adventr::submit_advent(answer = nrow(finished), day = 12, level = 1)
+# Level 2
+finished <- get_all_paths(cave_map, max_visit_small = 2)
+adventr::submit_advent(answer = nrow(finished), day = 12, level = 2)
+```
+
+
+```{r}
+visit_next_node <- function(current, visited, max_visit_small){
+
+  if(current == "end") return(1)
+  if(is_small(current)){
+    visited[[current]] <- visited[[current]] + 1 
+    if(visited[[current]] > max_visit_small) return(0)
+    if(max_visit_small > 1 && visited[[current]] == max_visit_small) max_visit_small <- max_visit_small - 1
+  }
+  
+  sum(sapply(cave_map_hash[[current]], visit_next_node, visited = visited, max_visit_small = max_visit_small))
+}
+is_small <- function(x) x == tolower(x)
+
+# Build a hashmap of the cave map
+cave_map_hash <- list()
+for(from in unique(cave_map$from)) cave_map_hash[[from]] <- cave_map$to[cave_map$from == from]
+# Keep tracked of how many times each node was visited
+visited_init <- list()
+for(from in unique(cave_map$from)) if(is_small(from)) visited_init[[from]] <- 0
+
+microbenchmark::microbenchmark(
+  tidy = get_all_paths(cave_map, max_visit_small = 2),
+  non_tidy = visit_next_node(visited_init, current = "start", max_visit_small = 2),
+  times = 20
+)
+```
+

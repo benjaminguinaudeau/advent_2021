@@ -1,0 +1,85 @@
+---
+title: "Day 11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+
+## Data and Helpers
+
+```{r}
+oct_mat_saf <- adventr::read_advent(day = 11) %>%
+  discard(~.x == "") %>%
+  str_split("") %>%
+  map(as.numeric)
+
+one_step_forward <- function(i, j){
+  
+  if(i < 1 | i > length(env$oct_mat)) return()
+  if(j < 1 | j > length(env$oct_mat[[1]])) return()
+  if(env$oct_mat[[i]][j] < 0) return() # If current cell already flashed, skip it
+  
+  env$oct_mat[[i]][j] <- env$oct_mat[[i]][j] + 1 # Incremenet the current cell
+
+  if(env$oct_mat[[i]][j] >= 10){
+    env$oct_mat[[i]][j] <- -1 # Mark current cell as already flashed
+    env$n_flash <- env$n_flash + 1 # Increment flash counter
+    
+    one_step_forward(i - 1, j - 1) # top left
+    one_step_forward(i - 1, j) # top
+    one_step_forward(i - 1, j + 1) # top right
+    
+    one_step_forward(i, j - 1) # left
+    one_step_forward(i, j + 1) # right
+    
+    one_step_forward(i + 1, j - 1) # bottom left
+    one_step_forward(i + 1, j) # bottom
+    one_step_forward(i + 1, j + 1) # bottom right
+  }
+  
+}
+
+update_matrix <- function(){
+  
+  for(i in seq_along(env$oct_mat)){
+    for(j in seq_along(env$oct_mat[[1]])){
+      one_step_forward(i, j) # Increment each of the octopus
+    }
+  }
+  
+  # Once all octs are incremented, reset the one who flashed
+  env$oct_mat <- env$oct_mat %>% map(~ifelse(.x < 0, 0, .x))
+}
+```
+
+## Level 2
+
+```{r}
+# Level 1
+env <- rlang::new_environment()
+env$n_flash <- 0
+env$oct_mat <- oct_mat_saf
+
+for(steps in 1:100) update_matrix()
+
+adventr::submit_advent(answer = env$n_flash, day = 11, level = 1) 
+
+# Level 2
+all_flashing <- function(mat) all(map_lgl(mat, ~all(.x == 0)))
+n_step <- 100
+
+while(!all_flashing(env$oct_mat)){
+  n_step <- n_step + 1
+  update_matrix()
+}
+
+adventr::submit_advent(answer = n_step, day = 11, level = 2) 
+```
+
+
