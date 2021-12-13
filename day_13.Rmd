@@ -1,0 +1,78 @@
+---
+title: "Day 11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# devtools::install_github("benjaminguinaudeau/adventr")
+library(tidyverse)
+```
+
+
+## Data and Helpers
+
+```{r}
+tmp <- c("6,10",
+"0,14",
+"9,10",
+"0,3",
+"10,4",
+"4,11",
+"6,0",
+"6,12",
+"4,1",
+"0,13",
+"10,12",
+"3,4",
+"3,0",
+"8,4",
+"1,10",
+"2,14",
+"8,10",
+"9,0",
+"fold along y=7",
+"fold along x=5")
+```
+
+
+```{r}
+tmp <- adventr::read_advent(day = 13)
+
+points_init <- tibble::tibble(tmp = tmp[1:902]) %>%
+  separate(tmp, into = c("x", "y")) %>%
+  mutate_all(as.numeric)
+
+inst <- tibble::tibble(tmp = tmp[904: length(tmp)]) %>%
+  extract(tmp, into = c("dir", "at"), regex = "(x|y)=(\\d*)", convert = T) %>%
+  drop_na
+
+fold <- function(.tbl, .dir, .at){
+  if(.dir == "y"){
+    .tbl %>% mutate(y = ifelse(y < .at, y, .at - (y - .at)))
+  } else {
+    .tbl %>% mutate(x = ifelse(x < .at, x, .at - (x - .at)))
+  }
+}
+level_1 <- points_init %>% fold(.dir = inst$dir[1], .at = inst$at[1]) %>%
+    unique
+
+adventr::submit_advent(answer = nrow(level_1), day = 13, level = 1) 
+
+pts <- points_init
+for(step in 1:nrow(inst)){
+  pts <- pts %>% fold(.dir = inst$dir[step], .at = inst$at[step]) %>%
+    unique
+}
+
+pts %>%
+  ggplot(aes(x, -y)) +
+  geom_point() +
+  theme_void() +
+  coord_equal()
+
+adventr::submit_advent(answer = "ABKJFBGC", day = 13, level = 2) 
+```
+
+
